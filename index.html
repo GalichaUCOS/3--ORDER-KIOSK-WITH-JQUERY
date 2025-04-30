@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ThaiLich POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Oswald:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Raleway', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      background-color: #544639;
+      color: white;
+      padding: 15px;
+      font-size: 24px;
+      font-weight: 600;
+      border-radius: 8px 8px 0 0;
+    }
+    .menu-section {
+      flex: 3;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 15px;
+      padding: 15px;
+    }
+    .menu-item {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .menu-item img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .menu-item-name {
+      font-size: 18px;
+      color: #544639;
+      margin: 0 0 5px 0;
+    }
+    .menu-item-price {
+      color: #666;
+      margin: 0 0 10px 0;
+    }
+    .quantity-input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .add-btn {
+      background-color: #4a6f5d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 10px;
+      width: 100%;
+      cursor: pointer;
+    }
+    .add-btn:hover {
+      background-color: #3d5d4e;
+    }
+    .order-section {
+      flex: 1;
+      min-width: 280px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    .ordered-items {
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .order-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+    }
+    .total-section {
+      padding: 15px;
+      border-top: 1px solid #eee;
+    }
+    .total-input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .pay-btn {
+      background-color: #4a6f5d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .pay-btn:hover {
+      background-color: #3d5d4e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="menu-section">
+      <div class="header">Menu</div>
+      <div class="menu-grid" id="menu"></div>
+    </div>
+
+    <div class="order-section">
+      <div class="header">Ordered Items</div>
+      <div class="ordered-items" id="ordered-items"></div>
+      <div class="total-section">
+        <div>Total: <span id="total-display">0 PHP</span></div>
+        <input type="text" class="total-input" placeholder="Enter the amount here" id="amount-input">
+        <button class="pay-btn" id="pay-button">Pay!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script>
+    const menuItems = [
+      { name: "Pad Thai", price: 150, imgSrc: "img/menu-item-1.jpg" },
+      { name: "Tom Yum Goong", price: 350, imgSrc: "img/menu-item-2.jpg" },
+      { name: "Yellow Curry", price: 200, imgSrc: "img/menu-item-3.jpg" },
+      { name: "Red Curry", price: 300, imgSrc: "img/menu-item-4.jpg" },
+      { name: "Green Curry", price: 250, imgSrc: "img/menu-item-5.jpg" },
+      { name: "Khao Soi", price: 200, imgSrc: "img/menu-item-6.jpg" },
+      { name: "Thai Fried Rice", price: 150, imgSrc: "img/menu-item-7.jpg" },
+      { name: "Thai Basil & Pork", price: 175, imgSrc: "img/menu-item-8.jpg" }
+    ];
+
+    let orderTotal = 0;
+    let orderedItems = [];
+
+    $(document).ready(function () {
+      const $menu = $("#menu");
+      menuItems.forEach((item, index) => {
+        const menuItem = $(`
+          <div class="menu-item">
+            <img src="${item.imgSrc}" alt="${item.name}">
+            <h3 class="menu-item-name">${item.name}</h3>
+            <p class="menu-item-price">${item.price} PHP</p>
+            <input type="number" min="1" class="quantity-input" id="qty-${index}" placeholder="Enter quantity">
+            <button class="add-btn" data-index="${index}">Add to order</button>
+          </div>
+        `);
+        $menu.append(menuItem);
+      });
+
+      $(document).on("click", ".add-btn", function () {
+        const index = $(this).data("index");
+        const quantity = parseInt($(`#qty-${index}`).val());
+
+        if (!quantity || quantity <= 0) {
+          alert("Please enter a valid quantity");
+          return;
+        }
+
+        const item = menuItems[index];
+        const itemTotal = item.price * quantity;
+        orderTotal += itemTotal;
+        orderedItems.push({ name: item.name, qty: quantity, total: itemTotal });
+
+        const orderItem = $(`
+          <div class="order-item">
+            <div>${quantity}x ${item.name}</div>
+            <div>${itemTotal.toFixed(2)} PHP</div>
+          </div>
+        `);
+
+        $("#ordered-items").append(orderItem);
+        $("#total-display").text(`${orderTotal.toFixed(2)} PHP`);
+        $(`#qty-${index}`).val("");
+      });
+
+      $("#pay-button").on("click", function () {
+        if (orderTotal <= 0) {
+          alert("Please add items to your order first");
+          return;
+        }
+
+        const amount = parseFloat($("#amount-input").val());
+
+        if (isNaN(amount)) {
+          alert("Please enter a valid amount");
+          return;
+        }
+
+        if (amount < orderTotal) {
+          alert("Insufficient amount. Please enter a higher amount.");
+          return;
+        }
+
+        const change = amount - orderTotal;
+        let receipt = "🧾 ThaiLich Receipt\n\n";
+        orderedItems.forEach(item => {
+          receipt += `${item.qty}x ${item.name} - ${item.total.toFixed(2)} PHP\n`;
+        });
+        receipt += `\nTotal: ${orderTotal.toFixed(2)} PHP\nPaid: ${amount.toFixed(2)} PHP\nChange: ${change.toFixed(2)} PHP`;
+
+        alert(receipt);
+
+        // Reset
+        $("#ordered-items").empty();
+        $("#total-display").text("0 PHP");
+        $("#amount-input").val("");
+        orderTotal = 0;
+        orderedItems = [];
+      });
+    });
+  </script>
+</body>
+</html>
